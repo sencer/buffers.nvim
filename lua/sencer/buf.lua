@@ -29,9 +29,6 @@ M.smart_close = function()
 end
 
 local function smart_next_buffer(fwd, start)
-	local dir = fwd and 1 or -1
-	local curbuf = start and start or vim.fn.bufnr()
-
 	-- Get buffers already visible.
 	local visible = {}
 	for i = 1, vim.fn.winnr("$") do
@@ -39,21 +36,34 @@ local function smart_next_buffer(fwd, start)
 	end
 
 	-- If all available buffers are visible then use bnext/bprev.
-	if #visible == #vim.fn.getbufinfo({ buflisted = 1 }) then
+	local listed = vim.fn.map(vim.fn.getbufinfo({ buflisted = 1 }), "v:val.bufnr")
+	local nlisted = #listed
+	if #visible == nlisted then
 		vim.cmd(fwd and "bnext" or "bprev")
 		return
 	end
 
-	-- Otherwise load the next non-visible.
-	local theend = fwd and vim.fn.bufnr("$") or 1
-	for buf = curbuf + dir, theend, dir do
+	local dir = fwd and 1 or -1
+	local curbuf = start and start
+		or (function(cb)
+			for i, buf in ipairs(listed) do
+				if buf == cb then
+					return i
+				end
+			end
+		end)(vim.fn.bufnr())
+
+	-- Otherwise load the next non-visible listed buffer.
+	local theend = fwd and nlisted or 1
+	for p = curbuf + dir, theend, dir do
+		local buf = listed[p]
 		if not visible[buf] then
 			vim.cmd("b" .. buf)
 			return
 		end
 	end
 
-	smart_next_buffer(fwd, fwd and 0 or vim.fn.bufnr("$") + 1)
+	smart_next_buffer(fwd, fwd and 0 or nlisted + 1)
 end
 
 M.smart_next = function()
@@ -65,34 +75,3 @@ M.smart_prev = function()
 end
 
 return M
-
--- nnoremap <silent> ]b :call <SID>next_buffer(1)<CR>
--- nnoremap <silent> [b :call <SID>next_buffer(0)<CR>
---
--- " Functions {{{
--- function! s:next_buffer(fwd) abort
---   let s:buffers = []
---   for s:buf in getbufinfo({'buflisted': 1})
---     if s:buf.hidden || !s:buf.loaded
---       call add(s:buffers, s:buf.bufnr)
---     endif
---   endfor
---
---   if empty(s:buffers)
---     if a:fwd | bnext | else | bprev | endif
---     return
---   endif
---
---   let s:i = 0
---   let s:bufnr = bufnr()
---   while  s:i < len(s:buffers) && s:buffers[s:i] < s:bufnr
---     let s:i += 1
---   endwhile
---
---   if a:fwd
---     exec 'b'.(s:i < len(s:buffers) ? s:buffers[s:i] : s:buffers[0])
---   else
---     exec 'b'.(s:i > 0 ? s:buffers[s:i-1] : s:buffers[-1])
---   end
---
--- endfunction
