@@ -6,8 +6,6 @@ vim.g.loaded_buffers_nvim = true
 vim.keymap.set("n", "<Leader>c", "<C-w>c", { remap = false })
 vim.keymap.set("n", "<Leader>o", "<C-w>o", { remap = false })
 
-vim.keymap.set("n", "<Leader>b", ":ls<CR>:b<Space>", { remap = false })
-
 vim.keymap.set("n", "<Leader>w", ":up!<CR>", { remap = false })
 vim.keymap.set("n", "<Leader>x", ":x!<CR>", { remap = false })
 
