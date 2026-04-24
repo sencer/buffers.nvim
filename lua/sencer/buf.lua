@@ -38,7 +38,14 @@ local function smart_next_buffer(fwd, start)
 	-- If all available buffers are visible then use bnext/bprev.
 	local listed = vim.fn.map(vim.fn.getbufinfo({ buflisted = 1 }), "v:val.bufnr")
 	local nlisted = #listed
-	if #visible == nlisted then
+
+	-- Count visible buffers correctly.
+	local visible_count = 0
+	for _ in pairs(visible) do
+		visible_count = visible_count + 1
+	end
+
+	if visible_count == nlisted then
 		vim.cmd(fwd and "bnext" or "bprev")
 		return
 	end
@@ -51,6 +58,8 @@ local function smart_next_buffer(fwd, start)
 					return i
 				end
 			end
+			-- Fallback if current buffer is not listed.
+			return fwd and 0 or nlisted + 1
 		end)(vim.fn.bufnr())
 
 	-- Otherwise load the next non-visible listed buffer.

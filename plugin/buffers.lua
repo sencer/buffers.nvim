@@ -3,41 +3,53 @@ if vim.g.loaded_buffers_nvim ~= nil then
 end
 vim.g.loaded_buffers_nvim = true
 
-vim.keymap.set("n", "<Leader>c", "<C-w>c", { remap = false })
-vim.keymap.set("n", "<Leader>o", "<C-w>o", { remap = false })
+vim.keymap.set("n", "<Leader>c", "<C-w>c")
+vim.keymap.set("n", "<Leader>o", "<C-w>o")
 
-vim.keymap.set("n", "<Leader>w", ":up!<CR>", { remap = false })
-vim.keymap.set("n", "<Leader>x", ":x!<CR>", { remap = false })
+vim.keymap.set("n", "<Leader>w", ":up!<CR>")
+vim.keymap.set("n", "<Leader>x", ":x!<CR>")
 
-vim.keymap.set("n", "<Leader>q", require("sencer.buf").smart_close, { remap = false })
-vim.keymap.set("n", "<Leader>Q", ":qa<CR>", { remap = false })
+vim.keymap.set("n", "<Leader>q", require("sencer.buf").smart_close)
+vim.keymap.set("n", "<Leader>Q", ":qa<CR>")
 
-vim.keymap.set("n", "<Leader>z", "winnr('$')==1?':tabclose<CR>':':tab split<CR>'", { remap = false, expr = true })
+vim.keymap.set("n", "<Leader>z", function()
+	vim.cmd(#vim.api.nvim_tabpage_list_wins(0) == 1 and "tabclose" or "tab split")
+end, { desc = "Toggle tab split or close" })
 
-vim.keymap.set("n", "]b", require("sencer.buf").smart_next, { remap = false })
-vim.keymap.set("n", "[b", require("sencer.buf").smart_prev, { remap = false })
+vim.keymap.set("n", "]b", require("sencer.buf").smart_next)
+vim.keymap.set("n", "[b", require("sencer.buf").smart_prev)
 
-vim.api.nvim_create_augroup("BufferOpts", { clear = false })
+vim.api.nvim_create_augroup("BufferOpts", { clear = true })
+
 vim.api.nvim_create_autocmd("CmdwinEnter", {
 	group = "BufferOpts",
 	pattern = "*",
-	command = "nnoremap <buffer> <Leader>q :q<CR>",
+	callback = function(opts)
+		vim.keymap.set("n", "<Leader>q", ":q<CR>", { buffer = opts.buf, silent = true })
+	end,
 })
 
 -- Don't create backup for /dev/shm files.
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufReadPre" }, {
 	group = "BufferOpts",
 	pattern = "/dev/shm/*",
-	command = "setlocal noswapfile noundofile",
+	callback = function(opts)
+		vim.bo[opts.buf].swapfile = false
+		vim.bo[opts.buf].undofile = false
+	end,
 })
 
 -- Go to most recent position.
 vim.api.nvim_create_autocmd("BufReadPost", {
 	group = "BufferOpts",
 	pattern = "*",
-	command = [[
-        if line("'\"") > 1 && line("'\"") <= line("$") |
-          exe "normal! g`\"" |
-        endif
-  ]],
+	callback = function(opts)
+		local mark = vim.api.nvim_buf_get_mark(opts.buf, '"')
+		local lnum = mark[1]
+		local col = mark[2]
+		local count = vim.api.nvim_buf_line_count(opts.buf)
+		if lnum > 1 and lnum <= count then
+			pcall(vim.api.nvim_win_set_cursor, 0, { lnum, col })
+		end
+	end,
 })
