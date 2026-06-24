@@ -39,13 +39,15 @@ local function smart_next_buffer(fwd, start)
 	local listed = vim.fn.map(vim.fn.getbufinfo({ buflisted = 1 }), "v:val.bufnr")
 	local nlisted = #listed
 
-	-- Count visible buffers correctly.
-	local visible_count = 0
-	for _ in pairs(visible) do
-		visible_count = visible_count + 1
+	-- Count visible listed buffers.
+	local visible_listed_count = 0
+	for _, buf in ipairs(listed) do
+		if visible[buf] then
+			visible_listed_count = visible_listed_count + 1
+		end
 	end
 
-	if visible_count == nlisted then
+	if visible_listed_count == nlisted then
 		vim.cmd(fwd and "bnext" or "bprev")
 		return
 	end
