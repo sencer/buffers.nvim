@@ -28,53 +28,36 @@ M.smart_close = function()
 	vim.cmd("qa")
 end
 
-local function smart_next_buffer(fwd, start)
-	-- Get buffers already visible.
+local function smart_next_buffer(fwd)
 	local visible = {}
 	for i = 1, vim.fn.winnr("$") do
 		visible[vim.fn.winbufnr(i)] = true
 	end
 
-	-- If all available buffers are visible then use bnext/bprev.
-	local listed = vim.fn.map(vim.fn.getbufinfo({ buflisted = 1 }), "v:val.bufnr")
+	local listed = vim.tbl_map(function(b) return b.bufnr end, vim.fn.getbufinfo({ buflisted = 1 }))
 	local nlisted = #listed
+	if nlisted == 0 then return end
 
-	-- Count visible listed buffers.
-	local visible_listed_count = 0
-	for _, buf in ipairs(listed) do
-		if visible[buf] then
-			visible_listed_count = visible_listed_count + 1
+	local curbuf = vim.fn.bufnr()
+	local cur_idx = 1
+	for i, b in ipairs(listed) do
+		if b == curbuf then
+			cur_idx = i
+			break
 		end
 	end
 
-	if visible_listed_count == nlisted then
-		vim.cmd(fwd and "bnext" or "bprev")
-		return
-	end
-
 	local dir = fwd and 1 or -1
-	local curbuf = start and start
-		or (function(cb)
-			for i, buf in ipairs(listed) do
-				if buf == cb then
-					return i
-				end
-			end
-			-- Fallback if current buffer is not listed.
-			return fwd and 0 or nlisted + 1
-		end)(vim.fn.bufnr())
-
-	-- Otherwise load the next non-visible listed buffer.
-	local theend = fwd and nlisted or 1
-	for p = curbuf + dir, theend, dir do
-		local buf = listed[p]
+	for step = 1, nlisted do
+		local idx = ((cur_idx - 1 + step * dir) % nlisted) + 1
+		local buf = listed[idx]
 		if not visible[buf] then
 			vim.cmd("b" .. buf)
 			return
 		end
 	end
 
-	smart_next_buffer(fwd, fwd and 0 or nlisted + 1)
+	vim.cmd(fwd and "bnext" or "bprev")
 end
 
 M.smart_next = function()
