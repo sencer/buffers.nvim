@@ -13,7 +13,13 @@ vim.keymap.set("n", "<Leader>q", require("sencer.buf").smart_close)
 vim.keymap.set("n", "<Leader>Q", ":qa<CR>")
 
 vim.keymap.set("n", "<Leader>z", function()
-	vim.cmd(#vim.api.nvim_tabpage_list_wins(0) == 1 and "tabclose" or "tab split")
+	if #vim.api.nvim_tabpage_list_wins(0) == 1 then
+		if #vim.api.nvim_list_tabpages() > 1 then
+			vim.cmd("tabclose")
+		end
+	else
+		vim.cmd("tab split")
+	end
 end, { desc = "Toggle tab split or close" })
 
 vim.keymap.set("n", "]b", require("sencer.buf").smart_next)
@@ -44,6 +50,9 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 	group = "BufferOpts",
 	pattern = "*",
 	callback = function(opts)
+		if vim.api.nvim_get_current_buf() ~= opts.buf then
+			return
+		end
 		local mark = vim.api.nvim_buf_get_mark(opts.buf, '"')
 		local lnum = mark[1]
 		local col = mark[2]

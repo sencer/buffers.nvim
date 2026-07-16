@@ -12,15 +12,15 @@ M.smart_close = function()
 		end
 	end
 
-	-- If there are multiple buffers, just delete the buffer.
-	if nbuffers > 1 then
-		vim.cmd("bd")
-		return
-	end
-
 	-- If this is an unlisted buffer, like a quickfix window, just close it.
 	if vim.fn.buflisted(vim.fn.bufnr()) == 0 then
 		vim.cmd("q")
+		return
+	end
+
+	-- If there are multiple buffers, just delete the buffer.
+	if nbuffers > 1 then
+		vim.cmd("bd")
 		return
 	end
 
