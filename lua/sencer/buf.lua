@@ -20,7 +20,7 @@ M.smart_close = function()
 
 	-- If there are multiple buffers, just delete the buffer.
 	if nbuffers > 1 then
-		vim.cmd("bd")
+		vim.cmd("confirm bd")
 		return
 	end
 
